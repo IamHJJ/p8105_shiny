@@ -77,8 +77,62 @@ lasso_cv |>
   geom_point()
 ```
 
+## Penguins
 
+```{r}
+library(palmerpenguins)
 
+data("penguins")
 
+penguins = 
+  penguins |> 
+  select(species, bill_length_mm, flipper_length_mm) |> 
+  drop_na() 
 
+penguins |> 
+  ggplot(aes(x = bill_length_mm, y = flipper_length_mm, color = species)) + 
+  geom_point()
+
+```
+
+```{r}
+kmeans_fit =
+  penguins |>
+  select(-species) |>
+  kmeans(centers = 3)
+
+penguins |>
+  broom::augment(kmeans_fit, data = _) |>
+  ggplot(aes(x = bill_length_mm, y = flipper_length_mm, color = .cluster)) +
+  geom_point()
+
+```
+
+## trajectories
+
+```{r}
+traj_data = 
+  read_csv("./data/trajectories.csv")
+
+traj_data |> 
+  ggplot(aes(x = week, y = value, group = subj)) + 
+  geom_point() + 
+  geom_path()
+
+int_slope_df = 
+  traj_data |> 
+  nest(data = week:value) |> 
+  mutate(
+    models = map(data, \(df) lm(value ~ week, data = df)),
+    result = map(models, broom::tidy)
+  ) |> 
+  select(subj, result) |> 
+  unnest(result) |> 
+  select(subj, term, estimate) |> 
+  pivot_wider(
+    names_from = term,
+    values_from = estimate
+  ) |> 
+  rename(int = "(Intercept)", slope = week)
+```
 
